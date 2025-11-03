@@ -1770,14 +1770,15 @@ void WebContents::RenderFrameCreated(
     return;
   }
 
-  content::RenderFrameHost::LifecycleState lifecycle_state =
-      render_frame_host->GetLifecycleState();
-  if (lifecycle_state == content::RenderFrameHost::LifecycleState::kActive) {
+  if (render_frame_host->GetLifecycleState() ==
+      content::RenderFrameHost::LifecycleState::kActive) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope handle_scope(isolate);
+    v8::HandleScope handle_scope{isolate};
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.SetGetter("frame", render_frame_host);
     Emit("frame-created", details);
+    content::WebContents::FromRenderFrameHost(render_frame_host)
+        ->SetSupportsDraggableRegions(true);
   }
 }
 
@@ -2303,7 +2304,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   rwh_impl->disable_hidden_ = !background_throttling_;
   web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
 
-  if (rwh_impl->is_hidden()) {
+  if (rwh_impl->IsHidden()) {
     rwh_impl->WasShown({});
   }
 }
